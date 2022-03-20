@@ -2,8 +2,6 @@
 
 import os
 from flask import Flask, redirect
-from flask_jwt import JWT, jwt_required, current_identity
-from werkzeug.security import safe_str_cmp
 
 app = Flask(__name__)
 
