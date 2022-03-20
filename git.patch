@@ -1,0 +1,173 @@
+From 25448794a19293b42eef11393e8937556496426f Mon Sep 17 00:00:00 2001
+From: Jonathan Picard <jonathan.picard1607@gmail.com>
+Date: Sun, 20 Mar 2022 18:25:37 +0100
+Subject: [PATCH 1/5] fix: exposed the correct port used by keycloak
+
+---
+ docker-compose.yml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 636a69e..9792cb1 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -48,11 +48,11 @@ services:
+     networks:
+     - 'backend'
+     expose:
+-    - '8080'
++    - '8090'
+     - '9990'
+     command:
+     - '-b=0.0.0.0'
+-    - '-Djboss.http.port=8080'
++    - '-Djboss.http.port=8090'
+     volumes:
+     - './opt/jboss/startup-scripts:/opt/jboss/startup-scripts'
+     - './realm-export.json:/realm-export.json'
+-- 
+2.25.1
+
+
+From 2bdefc037e29c7933f41deb660cdfe7dd2ba941b Mon Sep 17 00:00:00 2001
+From: Jonathan Picard <jonathan.picard1607@gmail.com>
+Date: Sun, 20 Mar 2022 18:36:31 +0100
+Subject: [PATCH 2/5] fix: corrected a typo in the flask url
+
+---
+ app/app.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/app/app.py b/app/app.py
+index 9322101..11d5e6c 100644
+--- a/app/app.py
++++ b/app/app.py
+@@ -20,7 +20,7 @@ except Exception as ex:
+ def index():
+     return 'Hello world!'
+ 
+-@app.route("/loogin")
++@app.route("/login")
+ def login():
+     return redirect(AUTH_URL, code=302)
+ 
+-- 
+2.25.1
+
+
+From d974c8e9a1140b5625146b2049090ea356ecafd6 Mon Sep 17 00:00:00 2001
+From: Jonathan Picard <jonathan.picard1607@gmail.com>
+Date: Sun, 20 Mar 2022 18:49:13 +0100
+Subject: [PATCH 3/5] fix: Use the gunicorn WSGI to be production ready
+
+---
+ app/app.py           | 2 +-
+ app/requirements.txt | 1 +
+ docker-compose.yml   | 2 --
+ 3 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/app.py b/app/app.py
+index 11d5e6c..540ff0e 100644
+--- a/app/app.py
++++ b/app/app.py
+@@ -29,4 +29,4 @@ def custom_callback():
+     return "Logged in!"
+ 
+ if __name__ == "__main__":
+-    app.run(host='0.0.0.0', port=8000)
++    app.run()
+diff --git a/app/requirements.txt b/app/requirements.txt
+index 661157b..124dd14 100644
+--- a/app/requirements.txt
++++ b/app/requirements.txt
+@@ -9,3 +9,4 @@ MarkupSafe==1.1.1
+ PyJWT==1.4.2
+ typing-extensions==3.7.4.3
+ Werkzeug==1.0.1
++gunicorn==20.1.0
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 9792cb1..d9f6305 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -26,8 +26,6 @@ services:
+     - 'TOKEN_URL=http://localhost/keycloak/realms/app/protocol/openid-connect/token'
+     - 'USERINFO_URL=http://localhost/keycloak/realms/app/protocol/openid-connect/userinfo'
+     - 'JWKS_URL=http://localhost/keycloak/realms/app/protocol/openid-connect/certs'
+-    entrypoint: ['python3']
+-    command: ['app.py']
+   keycloak:
+     image: 'jboss/keycloak:11.0.2'
+     container_name: 'keycloak'
+-- 
+2.25.1
+
+
+From 54e795a1bb6f3fe389d8d3a111dd159e963f00ab Mon Sep 17 00:00:00 2001
+From: Jonathan Picard <jonathan.picard1607@gmail.com>
+Date: Sun, 20 Mar 2022 18:57:02 +0100
+Subject: [PATCH 4/5] refactor: removed unused modules
+
+---
+ app/app.py           | 2 --
+ app/requirements.txt | 9 ---------
+ 2 files changed, 11 deletions(-)
+
+diff --git a/app/app.py b/app/app.py
+index 540ff0e..7af9d7b 100644
+--- a/app/app.py
++++ b/app/app.py
+@@ -2,8 +2,6 @@
+ 
+ import os
+ from flask import Flask, redirect
+-from flask_jwt import JWT, jwt_required, current_identity
+-from werkzeug.security import safe_str_cmp
+ 
+ app = Flask(__name__)
+ 
+diff --git a/app/requirements.txt b/app/requirements.txt
+index 124dd14..35bfd0d 100644
+--- a/app/requirements.txt
++++ b/app/requirements.txt
+@@ -1,12 +1,3 @@
+-click==7.1.2
+ Flask==1.1.2
+-Flask-JWT==0.3.2
+-h11==0.11.0
+-httptools==0.1.1
+ itsdangerous==1.1.0
+-Jinja2==2.11.2
+-MarkupSafe==1.1.1
+-PyJWT==1.4.2
+-typing-extensions==3.7.4.3
+-Werkzeug==1.0.1
+ gunicorn==20.1.0
+-- 
+2.25.1
+
+
+From 1c68004de0fecba960759ae9014020984978ee13 Mon Sep 17 00:00:00 2001
+From: Jonathan Picard <jonathan.picard1607@gmail.com>
+Date: Sun, 20 Mar 2022 18:59:45 +0100
+Subject: [PATCH 5/5] refactor: removed redundant sub_filter_types
+
+---
+ etc/nginx/nginx.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/etc/nginx/nginx.conf b/etc/nginx/nginx.conf
+index 46f58e1..5318e0c 100644
+--- a/etc/nginx/nginx.conf
++++ b/etc/nginx/nginx.conf
+@@ -69,7 +69,7 @@ http {
+       proxy_set_header Host keycloak:8090;
+       proxy_redirect "http://keycloak:8090" "$scheme://$host";
+       sub_filter "http://keycloak:8090" "$scheme://$host";
+-      sub_filter_types text/html application/json;
++      sub_filter_types application/json;
+       sub_filter_once off;
+     }
+     location /keycloak/admin {
+-- 
+2.25.1
+
